@@ -132,6 +132,8 @@ class ResyncPeakDetect(QObject):
             self.calcRefTrace(self.rtrace)
         except ValueError:
             self.findParam('enabled').setValue(False)
+        
+        self.NumTrace = self.trace.NumTrace
    
     def setTraceManager(self, tmanager):
         self.trace = tmanager    
