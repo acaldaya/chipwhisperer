@@ -29,6 +29,28 @@ import chipwhisperer.common.aes_tables as aes_tables
 
 numSubKeys = 16
 
+intermediates = [
+                    {'name': 'Byte 0', 'range': (0, 255)}, 
+                    {'name': 'Byte 1', 'range': (0, 255)}, 
+                    {'name': 'Byte 2', 'range': (0, 255)}, 
+                    {'name': 'Byte 3', 'range': (0, 255)}, 
+                    {'name': 'Byte 4', 'range': (0, 255)}, 
+                    {'name': 'Byte 5', 'range': (0, 255)}, 
+                    {'name': 'Byte 6', 'range': (0, 255)}, 
+                    {'name': 'Byte 7', 'range': (0, 255)}, 
+                    {'name': 'Byte 8', 'range': (0, 255)},
+                    {'name': 'Byte 9', 'range': (0, 255)},
+                    {'name': 'Byte 10', 'range': (0, 255)},
+                    {'name': 'Byte 11', 'range': (0, 255)},
+                    {'name': 'Byte 12', 'range': (0, 255)},
+                    {'name': 'Byte 13', 'range': (0, 255)},
+                    {'name': 'Byte 14', 'range': (0, 255)},
+                    {'name': 'Byte 15', 'range': (0, 255)}
+                ]
+
+def getKeyRange(bnum):
+    return intermediates[bnum]['range']
+
 ##Generate this table with:
 #HW = []
 #for n in range(0, 256):

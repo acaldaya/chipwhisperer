@@ -54,6 +54,7 @@ except ImportError:
 
 import chipwhisperer.analyzer.attacks.models.AES128_8bit as models_AES128_8bit
 import chipwhisperer.analyzer.attacks.models.AES256_8bit as models_AES256_8bit
+import chipwhisperer.analyzer.attacks.models.DES_8bit as models_DES_8bit
 import chipwhisperer.analyzer.attacks.models.AES_RoundKeys as models_AES_RoundKeys
 from chipwhisperer.analyzer.attacks.AttackBaseClass import AttackBaseClass
 from chipwhisperer.analyzer.attacks.AttackProgressDialog import AttackProgressDialog
@@ -87,7 +88,8 @@ class CPA(AttackBaseClass, AttackGenericParameters):
         
         attackParams = [{'name':'CPA Algorithm', 'key':'CPA_algo', 'type':'list', 'values':cpaalgos, 'value':CPAProgressive, 'set':self.setAlgo},                   
                         {'name':'Hardware Model', 'type':'group', 'children':[
-                        {'name':'Crypto Algorithm', 'key':'hw_algo', 'type':'list', 'values':{'AES-128 (8-bit)':models_AES128_8bit, 'AES-256 (8-bit)':models_AES256_8bit}, 'value':'AES-128', 'set':self.setHWAlgo},
+                        {'name':'Crypto Algorithm', 'key':'hw_algo', 'type':'list', 'values':{'AES-128 (8-bit)':models_AES128_8bit, 'AES-256 (8-bit)':models_AES256_8bit}, 'value':models_AES128_8bit, 'set':self.setHWAlgo},
+                        {'name':'Operation', 'key':'hw_operation', 'type':'list', 'values':{'Encryption':'enc'}, 'value':'Encryption'},
                         {'name':'Key Round', 'key':'hw_round', 'type':'list', 'values':['first', 'last'], 'value':'first'},
                         {'name':'Power Model', 'key':'hw_pwrmodel', 'type':'list', 'values':['Hamming Weight', 'Hamming Distance', 'Hamming Weight (inverse)'], 'value':'Hamming Weight'},
                         ]},
@@ -104,10 +106,12 @@ class CPA(AttackBaseClass, AttackGenericParameters):
         ExtendedParameter.setupExtended(self.params, self)
         
         self.setAlgo(self.findParam('CPA_algo').value())
+        self.setHWAlgo(self.findParam('hw_algo').value())
         self.updateBytesVisible()
             
     def setHWAlgo(self, algo):
         self.numsubkeys = algo.numSubKeys
+        self.hwalgo = algo
         self.updateBytesVisible()
 
     def setAlgo(self, algo):
@@ -164,6 +168,7 @@ class CPA(AttackBaseClass, AttackGenericParameters):
             self.attack.setByteList(self.bytesEnabled())
             self.attack.setKeyround(self.findParam('hw_round').value())
             self.attack.setModeltype(self.findParam('hw_pwrmodel').value())
+            #self.attack.setOperation(self.findParam('hw_operation').value())
             self.attack.setStatsReadyCallback(self.statsReady)
             
             progress = AttackProgressDialog()

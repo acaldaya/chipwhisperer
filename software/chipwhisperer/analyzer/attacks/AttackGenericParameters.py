@@ -97,6 +97,11 @@ class AttackGenericParameters(QObject):
         blist = []
         for i,t in enumerate(self.bytesParameters()):
             if i < self.numsubkeys:
+                try:
+                    t.setName(self.hwalgo.intermediates[i]['name'])
+                except AttributeError:
+                    # Maybe hwalgo is not yet set
+                    pass
                 t.show()
             else:
                 t.hide()
@@ -123,7 +128,7 @@ class AttackGenericParameters(QObject):
         for p in self.params.children():
             if p.name() == 'Attacked Bytes':
                 for t in p.children():
-                    if t.name().startswith('Byte'):
+                    if not t.name().startswith('All '):
                         blist.append(t)
 
         return blist

@@ -63,7 +63,8 @@ class CPASimpleLoop(QObject):
             #print "%d - %d (%d %d)"%( pointRange[bnum][0],  pointRange[bnum][1], padbefore, padafter)
     
         #For each 0..0xFF possible value of the key byte
-        for key in range(0, 256):                
+        key_range = model.getKeyRange(bnum)
+        for key in range(key_range[0], key_range[1]+1):                
             #Initialize arrays & variables to zero
             sumnum = np.zeros(len(traces[0,:]))
             sumden1 = np.zeros(len(traces[0,:]))
