@@ -88,7 +88,7 @@ class CPA(AttackBaseClass, AttackGenericParameters):
         
         attackParams = [{'name':'CPA Algorithm', 'key':'CPA_algo', 'type':'list', 'values':cpaalgos, 'value':CPAProgressive, 'set':self.setAlgo},                   
                         {'name':'Hardware Model', 'type':'group', 'children':[
-                        {'name':'Crypto Algorithm', 'key':'hw_algo', 'type':'list', 'values':{'AES-128 (8-bit)':models_AES128_8bit, 'AES-256 (8-bit)':models_AES256_8bit}, 'value':models_AES128_8bit, 'set':self.setHWAlgo},
+                        {'name':'Crypto Algorithm', 'key':'hw_algo', 'type':'list', 'values':{'AES-128 (8-bit)':models_AES128_8bit, 'AES-256 (8-bit)':models_AES256_8bit, 'DES (8-bit)': models_DES_8bit}, 'value':models_AES128_8bit, 'set':self.setHWAlgo},
                         {'name':'Operation', 'key':'hw_operation', 'type':'list', 'values':{'Encryption':'enc'}, 'value':'Encryption'},
                         {'name':'Key Round', 'key':'hw_round', 'type':'list', 'values':['first', 'last'], 'value':'first'},
                         {'name':'Power Model', 'key':'hw_pwrmodel', 'type':'list', 'values':['Hamming Weight', 'Hamming Distance', 'Hamming Weight (inverse)'], 'value':'Hamming Weight'},
