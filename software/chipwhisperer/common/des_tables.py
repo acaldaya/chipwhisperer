@@ -125,12 +125,17 @@ sbox_8 = [
 
 sboxes = [sbox_1, sbox_2, sbox_3, sbox_4, sbox_5, sbox_6, sbox_7, sbox_8]
 
-initial_permutation = [uint64(1) << uint64(63 - i) for i in initial_permutation]
+initial_permutation = [uint64(1) << uint64(64 - i) for i in initial_permutation]
 expansion = [uint64(1) << uint64(32 - i) for i in expansion]
-#expansion = [uint8(i) for i in expansion]
 
 def SBoxLookup(input, sbox):
-    return sboxes[sbox][input]
+    input = int(input)
+
+    m = ((input & (1 << 5)) >> 4) | (input & 1)
+    n = (input & 0x1E) >> 1
+
+    # Find the permutation value
+    return sboxes[sbox][(m << 4) + n]
 
 def IP(input):
     output = 0
