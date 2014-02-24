@@ -105,17 +105,18 @@ class CPA(AttackBaseClass, AttackGenericParameters):
         self.showScriptParameter = None
         ExtendedParameter.setupExtended(self.params, self)
         
-        self.setAlgo(self.findParam('CPA_algo').value())
         self.setHWAlgo(self.findParam('hw_algo').value())
-        self.updateBytesVisible()
-            
-    def setHWAlgo(self, algo):
-        self.numsubkeys = algo.numSubKeys
-        self.hwalgo = algo
+
+    def setHWAlgo(self, hwalgo):
+        self.numsubkeys = hwalgo.numSubKeys
+        self.hwalgo = hwalgo
         self.updateBytesVisible()
 
+        # setAlgo depends on the value of hwalgo
+        self.setAlgo(self.findParam('CPA_algo').value())
+
     def setAlgo(self, algo):
-        self.attack = algo(self.findParam('hw_algo').value())
+        self.attack = algo(self.hwalgo)
         try:
             self.attackParams = self.attack.paramList()[0]
         except:
