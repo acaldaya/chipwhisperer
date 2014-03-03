@@ -61,6 +61,7 @@ def HypHW(pt, ct, sub_key_part, sbox):
         # pt is an array of bytes
         # sub_key_part is the input to a specific s-box of round 1
         # sbox is the number of the chosen sbox
+        #print list(pt)
         pt = pt[:8]
         if len(pt) != 8:
             raise ValueError("The plain text must be 64 bit long")
@@ -71,13 +72,14 @@ def HypHW(pt, ct, sub_key_part, sbox):
             input |= x
         
         ip = des_tables.IP(input)
+        #print " ip: %016x"%ip
         right = des_tables.Right(ip)
         expand = des_tables.Expand(right)
         pt_part = selectSBoxInput(expand, sbox)
         sbox_input = pt_part ^ sub_key_part
         x = des_tables.SBoxLookup(sbox_input, sbox)
         
-        print "input: %016x, ip: %016x, right: %08x, expand: %012x, sbox: %d, pt_part: %02x, key_guess: %02x, sbox_input: %02x, sbox output: %02x" % (input, ip, right, expand, sbox + 1, pt_part, sub_key_part, sbox_input, x)
+        #print "input: %016x, ip: %016x, right: %08x, expand: %012x, sbox: %d, pt_part: %02x, key_guess: %02x, sbox_input: %02x, sbox output: %02x" % (input, ip, right, expand, sbox + 1, pt_part, sub_key_part, sbox_input, x)
 
         return hw.getHW(x)
 
@@ -103,3 +105,10 @@ if __name__ == "__main__":
     HypHW(pt, None, 0, 2)
     HypHW(pt, None, 0, 3)
     HypHW(pt, None, 0, 7)
+    
+    pt = [0xaa,0x22,0x33,0x44,0x55,0x66,0x77,0xaa]
+    pt = [numpy.uint8(x) for x in pt]
+
+    for sbox in range(8):
+        print HypHW(pt, None, 0, sbox)
+
