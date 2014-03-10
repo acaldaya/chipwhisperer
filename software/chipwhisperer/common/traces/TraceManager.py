@@ -239,6 +239,10 @@ class TraceManagerDialog(QDialog):
 
         self.validateTable()
 
+    def enableTraces(self, index):
+        self.table.cellWidget(index, self.findCol("Enabled")).setChecked(True)
+        self.validateTable()
+
     def validateTable(self):
         startTrace = 0
         for i in range(0, self.table.rowCount()):
