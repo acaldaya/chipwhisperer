@@ -109,7 +109,7 @@ class ChipWhispererAnalyzer(MainChip):
                     [{'name':'Module #%d' % step, 'type':'list', 'value':0, 'values':Preprocessing.listAll(self), 'set':partial(self.setPreprocessing, step)} for step in range(0, numPreprocessingStep)]},
                          
                 {'name':'Attack', 'type':'group', 'children':[
-                    {'name':'Module', 'type':'list', 'values':{'CPA':CPA(self, console=self.console)}, 'value':'CPA', 'set':self.setAttack},                                          
+                    {'name':'Module', 'type':'list', 'values':{'CPA':CPA(self, console=self.console, showScriptParameter=self.showScriptParameter)}, 'value':'CPA', 'set':self.setAttack},                                          
                     ]},
                          
                 {'name':'Post-Processing', 'type':'group'},
@@ -159,7 +159,7 @@ class ChipWhispererAnalyzer(MainChip):
         self.openFile.connect(self.openProject)
 
         self.manageTraces.tracesChanged.connect(self.tracesChanged)
-        self.setAttack(CPA(self, console=self.console))
+        self.setAttack(CPA(self, console=self.console, showScriptParameter=self.showScriptParameter))
         
         self.setupPreprocessorChain()
         
@@ -234,7 +234,7 @@ class ChipWhispererAnalyzer(MainChip):
         self.lastoutput = self.manageTraces.iface
         for t in self.preprocessingList:
             if t:
-                t.setTraceManager(self.lastoutput)
+                t.setTraceSource(self.lastoutput)
                 t.init()
                 self.lastoutput = t           
         self.traces = self.lastoutput

@@ -66,7 +66,48 @@ class ModuleListDialog(QDialog):
         layout.addWidget(table)
         self.setLayout(layout)        
 
+class OutLog:
+    def __init__(self, edit, out=None, color=None, origStdout=None):
+        """(edit, out=None, color=None) -> can write stdout, stderr to a
+        QTextEdit.
+        edit = QTextEdit
+        out = alternate stream ( can be the original sys.stdout )
+        color = alternate color (i.e. color stderr a different color)
+        """
+        self.edit = edit
+        self.out = None
+        self.color = color
+        self.origStdout = origStdout
+
+    def write(self, m):
+        # Still redirect to original STDOUT
+
+        if self.color:
+            tc = self.edit.textColor()
+            self.edit.setTextColor(self.color)
+
+        self.edit.moveCursor(QTextCursor.End)
+        self.edit.insertPlainText(m)
+
+        if self.color:
+            self.edit.setTextColor(tc)
+
+        if self.out:
+            self.out.write(m)
+
+        if self.origStdout:
+            self.origStdout.write(m)
+
 class MainChip(QMainWindow):
+    """
+    This is the base GUI class, used for both the Analyzer and Capture software. It defines a number of
+    useful features such as the ability to add docks, setting windows, consoles for logging errors, etc. 
+    You can run a demo which shows the basic features, which would look like this:
+    
+    .. image:: /images/mainchip-demo.png
+       
+    """
+
     settings_docks = []
 
     MaxRecentFiles = 4
@@ -94,6 +135,7 @@ class MainChip(QMainWindow):
         self.initUI()
         self.lastMenuActionSection = None
         self.paramTrees = []
+        self.originalStdout = None
         
         #Fake widget for dock
         #TODO: Would be nice if this auto-resized to keep small, but not amount of playing
@@ -106,7 +148,10 @@ class MainChip(QMainWindow):
 
 
     def restoreDockGeometry(self):
-        """Needs to be called AFTER doing user-land setup"""
+        """
+        Call after any class-specific setup (e.g. making docks), as this will then
+        restore everything using saved QSettings()
+        """
         
         #Settings
         settings = QSettings()
@@ -114,6 +159,15 @@ class MainChip(QMainWindow):
         self.restoreState(settings.value("state"))
         
     def addWindowMenuAction(self, action, section):
+        """
+        When you add a dock, this function also adds
+        an option to show/hide it form the 'Window' menu
+
+        :param action: Action to take when clicking item form 'Window' menu
+        :type action: QAction
+        :param section: Name of section used to group together
+        :type section: str
+        """
         
         #TODO: Should this be done with submenus?
         if section != self.lastMenuActionSection:
@@ -123,7 +177,7 @@ class MainChip(QMainWindow):
         self.windowMenu.addAction(action)
         
     def addDock(self, dockWidget, name="Settings", area=Qt.LeftDockWidgetArea, allowedAreas=Qt.TopDockWidgetArea |Qt.BottomDockWidgetArea | Qt.RightDockWidgetArea| Qt.LeftDockWidgetArea, visible=True):
-        """Add a widget (dockwidget) as a dock to the main window, and add it to the Windows menu"""                
+        """Add a dockwidget to the main window, which also adds it to the 'Windows' menu"""
         #Configure dock
         dock = QDockWidget(name)
         dock.setAllowedAreas(allowedAreas)
@@ -141,7 +195,7 @@ class MainChip(QMainWindow):
         return dock
     
     def addSettings(self, tree, name):
-        """Add a settings dock - same as addDock but defaults to left-hand side"""
+        """Adds a dockwidget designed to store a ParameterTree, also adds to 'Windows' menu"""
         self.paramTrees.append(tree)
         dock = self.addDock(tree, name=name, area=Qt.LeftDockWidgetArea)
         self.settings_docks.append(dock)
@@ -158,21 +212,31 @@ class MainChip(QMainWindow):
         gw = GraphWidget()
         return self.addDock(gw, name=name, area=Qt.RightDockWidgetArea)
         
-    def addConsole(self, name="Debug Logging", visible=True):
+    def addConsole(self, name="Debug Logging", visible=True, redirectStdOut=True):
         """Add a QTextBrowser, used as a console/debug window"""
         console = QTextBrowser()
-        self.addDock(console, name, area=Qt.BottomDockWidgetArea, visible=visible) 
+        self.addDock(console, name, area=Qt.BottomDockWidgetArea, visible=visible)
+
+        if redirectStdOut:
+            if self.originalStdout is None:
+                self.originalStdout = sys.stdout
+            sys.stdout = OutLog(console, sys.stdout, origStdout=self.originalStdout)
+            sys.stderr = OutLog(console, sys.stderr, QColor(255, 0, 0), origStdout=self.originalStdout)
+
         return console    
     
     def addPythonConsole(self, name="Python Console", visible=False):
+        """Add a python console, inside which you can access the Python interpreter"""
         wid = PythonConsole.QPythonConsole(self, locals())
         self.addDock(wid, name, area=Qt.BottomDockWidgetArea, visible=visible)
         return wid   
         
     def clearAllSettings(self):
+        """Clear all saved QSettings(), such as window location etc"""
         QSettings.remove("")
         
     def closeEvent(self, event):
+        """Called when window is closed, attempts to save state/geometry"""
         settings = QSettings()
         settings.setValue("geometry", self.saveGeometry())
         settings.setValue("state", self.saveState())
@@ -183,6 +247,7 @@ class MainChip(QMainWindow):
             event.ignore()
 
     def createFileActions(self):
+        """Add the file actions (open/save/new)"""
         self.openAct = QAction(QIcon('open.png'), '&Open Project', self,
                                shortcut=QKeySequence.Open,
                                statusTip='Open Project File',
@@ -202,9 +267,11 @@ class MainChip(QMainWindow):
             self.recentFileActs.append(QAction(self, visible=False, triggered=self.openRecentFile))
 
     def jerkface(self):
+        """Trolls the User"""
         QMessageBox.question(self, 'Just Kidding', "Just kidding, this doesn't exist yet. Well good luck then, I better be going.", QMessageBox.No, QMessageBox.No)
 
     def createMenus(self):
+        """Create all menus (File, Window, etc)"""
         self.fileMenu= self.menuBar().addMenu("&File")
         self.fileMenu.addAction(self.newAct)
         self.fileMenu.addAction(self.openAct)
@@ -229,13 +296,15 @@ class MainChip(QMainWindow):
         self.helpMenu.addAction(self.helpListAct)
             
     def enforceMenuOrder(self):
+        """Makes sure menus appear in correct order, required as they get reordered when we add a new item to one"""
         self.fakeAction = QAction('Does Nothing', self, visible=False)        
         self.projectMenu.addAction(self.fakeAction)
         self.toolMenu.addAction(self.fakeAction)
         self.windowMenu.addAction(self.fakeAction)
         self.helpMenu.addAction(self.fakeAction)
             
-    def initUI(self):        
+    def initUI(self):
+        """Setup the UI, creating statusbar, setting title, menus, etc"""
         self.statusBar()
         self.setWindowTitle(self.name)
         self.setWindowIcon(QIcon(":/images/cwicon.png"))
@@ -249,6 +318,7 @@ class MainChip(QMainWindow):
         self.show()
         
     def updateTitleBar(self):
+        """Update filename shown in title bar"""
         if self.filename is not None:
             fname = os.path.basename(self.filename)
         else:
@@ -258,14 +328,16 @@ class MainChip(QMainWindow):
         self.setWindowModified(self.dirty)
         
     def listModulesShow(self):
+        """Opens the Dialog which shows loaded/unloaded modules"""
         ml = ModuleListDialog(self.listModules)
         ml.exec_()
 
     def listModules(self):
-        """Overload this to test imports"""
+        """Should return a list of all possible imports, used to test which modules are missing"""
         return [["MainChip", True, ""]]
 
     def setCurrentFile(self, fname):
+        """Set current project filename, adds it to recent file list"""
         self.filename = fname
         
         self.updateTitleBar()
@@ -293,6 +365,7 @@ class MainChip(QMainWindow):
                 widget.updateRecentFileActions()
 
     def updateRecentFileActions(self):
+        """Update & Load the list of recent files"""
         settings = QSettings()
         files = settings.value('recentFileList')
         files_no = 0
@@ -403,13 +476,13 @@ class MainChip(QMainWindow):
         in order to recreate a system. This will automatically be called if the module
         has done the following:
         
-        * When calling ExtendedParameter.setupParameter(), have passed a reference to 'self' like this:
+        When calling ExtendedParameter.setupParameter(), have passed a reference to 'self' like this::
           
-            ExtendedParameter.setupExtended(self.params, self)
+           ExtendedParameter.setupExtended(self.params, self)
               
-        * Have a function called paramTreeChanged in the class which calls showScriptParameter (this function).
-          Typically done like the following, where self.showScriptParameter is setup in the __init__() call. You
-          might need to pass the reference to this instance down to lower modules.
+        Have a function called paramTreeChanged in the class which calls showScriptParameter (this function).
+        Typically done like the following, where self.showScriptParameter is setup in the setupExtended() call. You
+        might need to pass the reference to this instance down to lower modules.::
           
             def paramTreeChanged(self, param, changes):
                 if self.showScriptParameter is not None:

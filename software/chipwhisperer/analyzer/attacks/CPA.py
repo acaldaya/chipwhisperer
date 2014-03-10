@@ -70,9 +70,10 @@ from AttackGenericParameters import AttackGenericParameters
 class CPA(AttackBaseClass, AttackGenericParameters):
     """Correlation Power Analysis Attack"""
             
-    def __init__(self, parent=None, console=None):
-        super(CPA, self).__init__(parent)
+    def __init__(self, parent=None, console=None, showScriptParameter=None):
         self.console=console
+        self.showScriptParameter=showScriptParameter
+        super(CPA, self).__init__(parent)
         
     def debug(self, sr):
         if self.console is not None:
@@ -101,8 +102,6 @@ class CPA(AttackBaseClass, AttackGenericParameters):
                         },                    
                       ]
         self.params = Parameter.create(name='Attack', type='group', children=attackParams)
-        #Need 'showScriptParameter = None' for setupExtended call below
-        self.showScriptParameter = None
         ExtendedParameter.setupExtended(self.params, self)
         
         self.setHWAlgo(self.findParam('hw_algo').value())
@@ -115,8 +114,8 @@ class CPA(AttackBaseClass, AttackGenericParameters):
         # setAlgo depends on the value of hwalgo
         self.setAlgo(self.findParam('CPA_algo').value())
 
-    def setAlgo(self, algo):
-        self.attack = algo(self.hwalgo)
+    def setAlgo(self, algo):        
+        self.attack = algo(self.findParam('hw_algo').value(), showScriptParameter=self.showScriptParameter)
         try:
             self.attackParams = self.attack.paramList()[0]
         except:
