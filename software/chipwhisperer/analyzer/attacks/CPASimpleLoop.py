@@ -50,7 +50,8 @@ class CPASimpleLoop(QObject):
         self.stats = DataTypeDiffs()
 
     def oneSubkey(self, bnum, pointRange, traces_all, numtraces, plaintexts, ciphertexts, keyround, modeltype, progressBar, model, pbcnt):
-        diffs = [0]*256
+        key_range =  model.getKeyRange(bnum)
+        diffs = [0] * (key_range[1] - key_range[0] + 1)
     
         if pointRange == None:
             traces = traces_all
@@ -159,7 +160,12 @@ class CPASimpleLoop(QObject):
         if progressBar:
             pbcnt = 0
             progressBar.setMinimum(0)
-            progressBar.setMaximum(len(brange) * 256)
+            max = 0
+            for b in brange:
+                key_range = self.model.getKeyRange(b)
+                max += key_range[1] - key_range[0] + 1
+
+            progressBar.setMaximum(max)
 
         numtraces = len(traces_all[:,0])
 
