@@ -192,8 +192,8 @@ class ChipWhispererGlitch(Parameterized):
             return
 
         if test:
-            width = 98.4
-            offset = -2.12
+            width = 10.21
+            offset = 30.88
 
         widthint = int(round((width / 100) * 256))
         offsetint = int(round((offset / 100) * 256))
