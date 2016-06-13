@@ -70,8 +70,6 @@ class CWCoreAPI(Parameterized):
         self.valid_attacks = pluginmanager.getPluginsInDictFromPackage("chipwhisperer.analyzer.attacks", True, False)
         self.valid_preprocessingModules = pluginmanager.getPluginsInDictFromPackage("chipwhisperer.analyzer.preprocessing", False, True, self)
 
-        self.settings = Settings()
-
         # Initialize default values
         self._project = self._scope = self._target = self._attack =  self._traceFormat = self._acqPattern = None
         self._attack = self.valid_attacks.get("CPA", None)

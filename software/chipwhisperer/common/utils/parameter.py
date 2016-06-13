@@ -88,7 +88,7 @@ class Parameter(object):
     "action"              - A button
     "int", "float"        - A value to be selected between a min and max limit
     "range", "rangegraph" - An interval and an interval that can be selected using a graph widget (graphwidget option)
-    "file"                - A string type with a file dialog button
+    "file"                - A string type with a file dialog button. Use 'filter':"dir" to select folders
     "filelist"            - Complex widged with a file list and mangement buttons to add/remove/edit/copy/set active.
      "color"              - Opens a color seletion dialog
      "menu"               - Hiden widget that inserts a new menu option
@@ -110,6 +110,7 @@ class Parameter(object):
     "readonly"            - Prevents the user of changing its value (it can be forced though)
     "help"                - Text displayed when clicking the help button
     "graphwidget"         - Reference to the graph widget when using parameters with type "rangegraph"
+    "psync"               - Disable reverse synchronization when calling the set method directly (no decorator needed)
     ...
 
     Examples:
@@ -145,7 +146,9 @@ class Parameter(object):
     suppertedAttributes = {"name", "key", "type", "values", "value", "set", "get", "limits", "step", "linked", "default", "tip", "action", "visible", "children", "readonly", "graphwidget"}
     usePyQtGraph = False
 
-    def __init__(self, parent=None, ignoreChildren=False, **opts):
+    def __init__(self, parent=None, ignoreChildren=False, usePyQtGraph=None, **opts):
+        if usePyQtGraph:
+            self.usePyQtGraph=usePyQtGraph
         self.sigValueChanged = util.Signal()
         self.sigLimitsChanged = util.Signal()
         self.sigOptionsChanged = util.Signal()
@@ -197,7 +200,7 @@ class Parameter(object):
 
         self.childs = []
         self.ignoredChildren = self.opts.pop("children", [])
-        if Parameter.usePyQtGraph and self.opts["type"] != "menu":
+        if (self.usePyQtGraph) and self.opts["type"] != "menu":
             self.setupPyQtGraphParameter()
         self.keys = {}
         if ignoreChildren is False:
@@ -205,6 +208,9 @@ class Parameter(object):
 
     def getName(self):
         return self.opts["name"]
+
+    def getType(self):
+        return self.opts["type"]
 
     def getTip(self):
         return self.opts["tip"]
@@ -223,22 +229,19 @@ class Parameter(object):
         else:
             return val()
 
-    def getKey(self):
+    def getValueKey(self):
         """Return the key used to set list type parameters"""
         if self.opts["type"] == "list":
             limits = self.opts["limits"]
             if isinstance(limits, dict):
                 return limits.keys()[limits.values().index(self.getValue())]
-            else:
-                return self.getValue()
-        else:
-            raise Exception("Only parameter type \"list\" support keys")
+        return self.getValue()
 
     def addChildren(self, children):
         """Add a list of children to the current paramenter"""
         addedChildren = []
         for child in children:
-            addedChildren.append(Parameter(self, ignoreChildren=True, **child))
+            addedChildren.append(Parameter(self, usePyQtGraph=self.usePyQtGraph, ignoreChildren=True, **child))
             self.append(addedChildren[-1])
         for child in addedChildren:  # Prevent children being added out of order
             child.addChildren(child.ignoredChildren)
@@ -530,6 +533,42 @@ class Parameter(object):
         """Deregister a registered parameter. Ignores if it is already deregistered."""
         Parameter.registeredParameters.pop(self.getName(), None)
 
+    def toString(self, level):
+        ret = ""
+        if self.getType()=="group":
+            ret += ("[" * (level+1)) + self.getName() + ("]" * (level+1)) + "\n"
+        else:
+            if not self.readonly():
+                ret += self.getName() + " = " + str(self.getValueKey()) + "\n"
+        for child in self.childs:
+            ret += child.toString(level+1)
+        return ret
+
+    def __str__(self):
+        return self.toString(0)
+
+    def save(self, fname):
+        f = open(fname, 'w')
+        f.write(self.toString(0))
+
+    def load(self, fname):
+        f = open(fname, 'r')
+        path=[]
+        for line in f:
+            level=0
+            for p in range(0,len(line)):
+                if line[p] == "[":
+                    level+=1
+                else:
+                    break
+            if level!=0:
+                if level=
+                path[level] = line[level:-(level+2)]
+                path = path[0:level]
+            else:
+                separator = line.find(" = ")
+                self.getChild(path+[line[0:separator]]).setValue(line)
+
     @classmethod
     def setParameter(cls, parameter, echo=False, blockSignal=False):
         """
@@ -660,6 +699,8 @@ if __name__ == '__main__':
             self.params2 = Parameter(name='Root', type='group')
             self.params.getChild("Module").stealDynamicParameters(self.params2)
             self.t2.addParameters(self.params2._PyQtGraphParameter)
+            self.params.save("abcde.txt")
+            self.params.load("abcde.txt")
 
         def printhelp(self, msg, obj):
             print msg
@@ -678,6 +719,7 @@ if __name__ == '__main__':
             except:
                 return 0
 
+    Parameter.usePyQtGraph=True
     m = maintest()
 
     t = m.t

@@ -23,6 +23,7 @@
 #    along with chipwhisperer.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
+from chipwhisperer.common.utils.parameter import Parameter
 
 #If we have QSettings(), use that to get values from registry
 try:
@@ -31,55 +32,59 @@ try:
 except ImportError:
     settings_backend = None
 
+
 class Settings(object):
 
     #Default settings all in one handy location
-    _settings_dict = {
-        "project-home-dir":os.path.join(os.path.expanduser('~'), 'chipwhisperer_projects'),
-    }
+
+    params = Parameter(usePyQtGraph=True, name="Settings", type='group')
+    params.addChildren([
+        {'name':"Project Folder", 'key':"project-home-dir", 'type':"file", "filter":"dir",
+         "value":os.path.join(os.path.expanduser('~'), 'chipwhisperer_projects')}
+    ])
 
     _backend = settings_backend
 
-    def __init__(self):
-        #Sync local settings to backend (if present)
-        if self._backend:
-            for key in self._settings_dict.keys():
-                #If backend has value, store locally
-                backend_value = self._backend.value(key, None)
-                if backend_value:
-                    self._settings_dict[key] = backend_value
-
-
-                #If value stored locally, store into backend if different
-                dict_value = self._settings_dict[key]
-                if dict_value != backend_value:
-                    self._backend.setValue(key, dict_value)
-
-    def value(self, name, default=None):
+    @classmethod
+    def value(cls, name, default=None):
         """Get the value from the settings, if not present return default"""
 
         #Try the backend first (if available)
         val = None
-        if self._backend:
-            val = self._backend.value(name, None)
+        if cls._backend:
+            val = cls._backend.value(name, None)
 
         #Try our local copy next
         if val is None:
             try:
-                val = self._settings_dict[name]
+                val = cls.params.getChild(name).getValue(default)
             except KeyError:
                 val = default
-
         return val
 
-    def setValue(self, name, value):
+    @classmethod
+    def setValue(cls, name, value, ignoreBackend=False):
         """Set the value"""
 
-        self._settings_dict[name] = value
+        try:
+            cls.params.getChild(name).setValue(value)
+        except KeyError:
+            cls.params.append(Parameter(cls.params, {'name':name, 'type':"str", "value":str(value)}))
 
         #Backend as well
-        if self._backend:
-            self._backend.setValue(name, value)
+        if cls._backend and not ignoreBackend:
+            cls._backend.setValue(name, value)
 
-    def setBackend(self, settings_backend):
-        self._backend = settings_backend
+    @classmethod
+    def setBackend(cls, settings_backend):
+        cls._backend = settings_backend
+        # for child in cls.params.childs:
+        #     #If backend has value, store locally
+        #     backend_value = cls._backend.value(child.getName(), None)
+        #     if backend_value:
+        #         cls.setValue(child.getName(), backend_value, ignoreBackend=True)
+        #
+        #     #If value stored locally, store into backend if different
+        #     dict_value = self._settings_dict[key]
+        #     if dict_value != backend_value:
+        #         self._backend.setValue(key, dict_value)

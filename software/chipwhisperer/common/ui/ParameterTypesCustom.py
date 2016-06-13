@@ -39,7 +39,6 @@ from pyqtgraph.parametertree.parameterTypes import WidgetParameterItem, EventPro
 from pyqtgraph import pixmaps
 from pyqtgraph.widgets.SpinBox import SpinBox
 
-
 # User defined Help Window used in the parameters
 helpwnd = None
 
@@ -203,9 +202,6 @@ class FileParameterItemHelp(WidgetParameterItemHelp):
         fileButton.setIcon(self.layoutWidget.style().standardIcon(QtGui.QStyle.SP_FileDialogContentsView))
         fileButton.clicked[bool].connect(self.openFile)
         self.layoutWidget.layout().addWidget(fileButton)
-        fname = QtCore.QSettings().value(self.param.opts["name"])
-        if fname:
-            self.param.setValue(fname)
 
     def makeWidget(self):
         w = QtGui.QLineEdit()
@@ -216,11 +212,13 @@ class FileParameterItemHelp(WidgetParameterItemHelp):
         return w
 
     def openFile(self):
-        fname, _ = QtGui.QFileDialog.getOpenFileName(None, 'Get file path', QtCore.QSettings().value(self.param.opts["name"]), self.param.opts["filter"])
+        if self.param.opts.get("filter", None) == "dir":
+            fname = QtGui.QFileDialog.getExistingDirectory(None, "Open Directory", self.param.value(),
+                                                              QtGui.QFileDialog.ShowDirsOnly)
+        else:
+            fname, _ = QtGui.QFileDialog.getOpenFileName(None, 'Get file path', self.param.value(), self.param.opts.get("filter", "*"))
         if fname:
             self.param.setValue(fname)
-            QtCore.QSettings().setValue(self.param.opts["name"], fname)
-
 
 class FileParameter(Parameter):
     itemClass = FileParameterItemHelp

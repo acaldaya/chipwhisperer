@@ -25,6 +25,7 @@
 import os
 from PySide.QtCore import *
 from PySide.QtGui import *
+from pyqtgraph.parametertree import ParameterTree
 import chipwhisperer.common.utils.qt_tweaks as QtFixes
 from chipwhisperer.common.api.settings import Settings
 
@@ -36,7 +37,7 @@ class CWPreferencesDialog(QtFixes.QDialog):
         self.setWindowTitle("ChipWhisperer Preferences")
 
         self._generalTab = GeneralTab(self, settings)
-        self._windowsTab = WindowTab(self, settings)
+        self._windowsTab = WindowTab(self)
 
         tabWidget = QTabWidget()
         tabWidget.addTab(self._generalTab, "General")
@@ -55,70 +56,66 @@ class CWPreferencesDialog(QtFixes.QDialog):
         self.setLayout(mainLayout)
 
         #Get all settings
-        self.readSettings()
+        # self.readSettings()
 
-    def readSettings(self):
-        """Reads all settings, and set unspecified to defaults. Settings are re-saved to disk to sync defaults back."""
-        self._generalTab.readSettings()
-        self._windowsTab.readSettings()
-
-        #Resync settings
-        self.saveSettings()
-
-    def saveSettings(self):
-        self._generalTab.saveSettings()
-        self._windowsTab.saveSettings()
+    # def readSettings(self):
+    #     """Reads all settings, and set unspecified to defaults. Settings are re-saved to disk to sync defaults back."""
+    #     self._generalTab.readSettings()
+    #
+    #     #Resync settings
+    #     self.saveSettings()
+    #
+    # def saveSettings(self):
+    #     self._generalTab.saveSettings()
 
 
 class GeneralTab(QWidget):
+    _name = "Preferences"
+
     def __init__(self, parent, settings):
         super(GeneralTab, self).__init__(parent)
 
         self.settings = settings
 
+        parameterTree = ParameterTree()
+        parameterTree.addParameters(self.settings.params._PyQtGraphParameter)
+
         defdirLayout = QHBoxLayout()
-        self.defaultDir = QLineEdit()
-        self.defaultDir.setReadOnly(True)
-        pbDefaultDir = QPushButton("Set")
-        pbDefaultDir.clicked.connect(self.setDefaultDir)
-        defdirLayout.addWidget(self.defaultDir)
-        defdirLayout.addWidget(pbDefaultDir)
+        defdirLayout.addWidget(parameterTree)
         mainLayout = QVBoxLayout()
         mainLayout.addLayout(defdirLayout)
         mainLayout.addStretch(1)
         self.setLayout(mainLayout)
 
-    def setDefaultDir(self):
-        pass
-
-    def readSettings(self):
-        """Read settings from 'settings' object"""
-        homedir = self.settings.value("project-home-dir")
-        self.defaultDir.setText(homedir)
-
-    def saveSettings(self):
-        """Save settings to 'settings' object"""
-
-        homedir = self.defaultDir.text()
-        if not os.path.isdir(homedir):
-            reply = QMessageBox.question(self, "ChipWhisperer Preferences", "Default project directory %s does not exist - should we create it?\n\n"%(homedir) +
-                                 "If you press `NO' please change default directory in `Preferences'.", QMessageBox.Yes | QMessageBox.No)
-            if reply == QMessageBox.Yes:
-                os.mkdir(homedir)
-        self.settings.setValue("project-home-dir", homedir)
-
+    # def saveSettings(self):
+    #     """Save settings to 'settings' object"""
+    #
+    #     homedir = self.defaultDir.text()
+    #     if not os.path.isdir(homedir):
+    #         reply = QMessageBox.question(self, "ChipWhisperer Preferences", "Default project directory %s does not exist - should we create it?\n\n"%(homedir) +
+    #                              "If you press `NO' please change default directory in `Preferences'.", QMessageBox.Yes | QMessageBox.No)
+    #         if reply == QMessageBox.Yes:
+    #             os.mkdir(homedir)
+    #     self.settings.setValue("project-home-dir", homedir)
 
 
 class WindowTab(QWidget):
-    def __init__(self, parent, settings):
+    def __init__(self, parent):
         super(WindowTab, self).__init__(parent)
 
+        layout = QVBoxLayout()
 
-    def readSettings(self):
-        """Read settings from 'settings' object"""
-        pass
+        saveButton = QPushButton("Save Settings", clicked=parent.parent().saveSettings)
+        saveButton.setToolTip('Save all settings')
+        layout.addWidget(saveButton)
 
+        restoreButton = QPushButton("Restore Settings", clicked=parent.parent().restoreSettings)
+        restoreButton.setToolTip('Restore all settings to previous saved state')
+        layout.addWidget(restoreButton)
 
-    def saveSettings(self):
-        """Save settings to 'settings' object"""
-        pass
+        resetButton = QPushButton("Reset Settings and &Exit", clicked=parent.parent().reset)
+        resetButton.setToolTip('Clear all settings and exit. Useful to not save the window geometry when exiting.')
+        layout.addWidget(resetButton)
+
+        layout.addStretch(1)
+        self.setLayout(layout)

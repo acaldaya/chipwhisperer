@@ -59,7 +59,7 @@ class ConfigObjProj(ConfigObj):
 
 
 class ProjectFormat(object):
-    untitledFileName = os.path.normpath(os.path.join(Settings().value("project-home-dir"), "tmp/default.cwp"))
+    untitledFileName = "tmp/default.cwp"
 
     def __init__(self):
         self.sigFilenameChanged = util.Signal()
@@ -72,13 +72,13 @@ class ProjectFormat(object):
         self.config = ConfigObjProj(callback=self.configObjChanged)
         self._traceManager = TraceManager().register()
         self._traceManager.dirty.connect(lambda: self.dirty.setValue(self._traceManager.dirty.value() or self.dirty.value()))
-        self.setFilename(ProjectFormat.untitledFileName)
+        self.setFilename(os.path.normpath(os.path.join(Settings.value("project-home-dir"), ProjectFormat.untitledFileName)))
 
     def configObjChanged(self, key):
         self.dirty.setValue(True)
 
     def isUntitled(self):
-        return self.filename == ProjectFormat.untitledFileName
+        return self.filename == os.path.normpath(os.path.join(Settings.value("project-home-dir"), ProjectFormat.untitledFileName))
 
     def traceManager(self):
         return self._traceManager
