@@ -110,6 +110,9 @@ class CWCoreAPI(Parameterized):
 
         self.newProject()
 
+    def saveSettings(self):
+        Settings().save()
+
     def getResults(self, name):
         """Return the requested result widget. It should be registered."""
         return ResultsBase.registeredObjects[name]

@@ -70,7 +70,7 @@ class CWMainGUI(QMainWindow):
         QMainWindow.__init__(self)
         CWMainGUI.instance = self
         self.name = name
-        self.cwPrefDialog = CWPreferencesDialog(self, api.settings)
+        self.cwPrefDialog = CWPreferencesDialog(self)
         sys.excepthook = self.exceptionHandlerDialog
         util.setUIupdateFunction(QCoreApplication.processEvents)
         self.api = api
@@ -203,6 +203,7 @@ class CWMainGUI(QMainWindow):
         """Called when window is closed, attempts to save state/geometry"""
         if not (hasattr(self, "dontSaveGeometry") and self.dontSaveGeometry):
             self.saveSettings()
+        self.api.saveSettings()
 
         if self.okToContinue():
             QMainWindow.closeEvent(self, event)

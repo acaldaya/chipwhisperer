@@ -23,68 +23,44 @@
 #    along with chipwhisperer.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
-from chipwhisperer.common.utils.parameter import Parameter
+import os.path
+from chipwhisperer.common.utils.parameter import Parameterized
 
-#If we have QSettings(), use that to get values from registry
-try:
-    from PySide.QtCore import QSettings
-    settings_backend = QSettings()
-except ImportError:
-    settings_backend = None
-
-
-class Settings(object):
-
+class Settings(Parameterized):
     #Default settings all in one handy location
+    _name = "Settings"
+    fname = "settings.txt"
+    parameters = None
 
-    params = Parameter(usePyQtGraph=True, name="Settings", type='group')
-    params.addChildren([
-        {'name':"Project Folder", 'key':"project-home-dir", 'type':"file", "filter":"dir",
-         "value":os.path.join(os.path.expanduser('~'), 'chipwhisperer_projects')}
-    ])
+    def __init__(self, fname=None):
+        if fname:
+            self.fname = fname
+        if Settings.parameters is None:
+            self.getParams().register()
+            self.getParams().addChildren([
+                {'name':"Project Folder", 'key':"project-home-dir", 'type':"file", "filter":"dir",
+                 "value":os.path.join(os.path.expanduser('~'), 'chipwhisperer_projects')}
+            ])
+            Settings.parameters = self.params
+            if os.path.isfile(self.fname):
+                self.params.load(self.fname)
+        else:
+            self.params = Settings.parameters
 
-    _backend = settings_backend
 
-    @classmethod
-    def value(cls, name, default=None):
+    def value(self, name, default=None):
         """Get the value from the settings, if not present return default"""
-
-        #Try the backend first (if available)
-        val = None
-        if cls._backend:
-            val = cls._backend.value(name, None)
-
-        #Try our local copy next
-        if val is None:
-            try:
-                val = cls.params.getChild(name).getValue(default)
-            except KeyError:
-                val = default
-        return val
-
-    @classmethod
-    def setValue(cls, name, value, ignoreBackend=False):
-        """Set the value"""
-
         try:
-            cls.params.getChild(name).setValue(value)
+            return self.params.getChild(name).getValue(default)
         except KeyError:
-            cls.params.append(Parameter(cls.params, {'name':name, 'type':"str", "value":str(value)}))
+            return default
 
-        #Backend as well
-        if cls._backend and not ignoreBackend:
-            cls._backend.setValue(name, value)
+    def setValue(self, name, value):
+        """Set the value"""
+        try:
+            self.params.getChild(name).setValue(value)
+        except KeyError:
+            self.params.addChildren([{'name':name, 'type':"str", "value":str(value)}])
 
-    @classmethod
-    def setBackend(cls, settings_backend):
-        cls._backend = settings_backend
-        # for child in cls.params.childs:
-        #     #If backend has value, store locally
-        #     backend_value = cls._backend.value(child.getName(), None)
-        #     if backend_value:
-        #         cls.setValue(child.getName(), backend_value, ignoreBackend=True)
-        #
-        #     #If value stored locally, store into backend if different
-        #     dict_value = self._settings_dict[key]
-        #     if dict_value != backend_value:
-        #         self._backend.setValue(key, dict_value)
+    def save(self):
+        self.params.save(self.fname)

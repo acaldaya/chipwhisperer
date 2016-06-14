@@ -535,11 +535,11 @@ class Parameter(object):
 
     def toString(self, level):
         ret = ""
-        if self.getType()=="group":
-            ret += ("[" * (level+1)) + self.getName() + ("]" * (level+1)) + "\n"
-        else:
+        if self.getType()!="group":
             if not self.readonly():
                 ret += self.getName() + " = " + str(self.getValueKey()) + "\n"
+        if len(self.childs) > 0:
+            ret += ("[" * (level+1)) + self.getName() + ("]" * (level+1)) + "\n"
         for child in self.childs:
             ret += child.toString(level+1)
         return ret
@@ -562,12 +562,30 @@ class Parameter(object):
                 else:
                     break
             if level!=0:
-                if level=
-                path[level] = line[level:-(level+2)]
-                path = path[0:level]
+                path = path[0:level-1]
+                if level >= len(path):
+                    if level > len(path)+1:
+                        raise Warning("Group hierarchy missing before line %d of file %s: %s" % (p, fname, line))
+                    path.append(line[level:-(level+1)])
             else:
-                separator = line.find(" = ")
-                self.getChild(path+[line[0:separator]]).setValue(line)
+                separator = line.find("=")
+                value = line[separator+1:-1].strip()
+                child = self.getChild(path[1:]+[line[0:separator].strip()])
+
+                if child.getType() == "int":
+                    value = int(value)
+                elif child.getType() == "float":
+                    value = float(value)
+                elif child.getType() == "menu" or child.getType() == "label" or child.getType() == "color":
+                    continue
+                elif child.getType() == "str" or child.getType() == "text" or child.getType() == "action" or\
+                    child.getType() == "file" or child.getType() == "filelist":
+                    pass
+                elif child.getType() == "list" and isinstance(child.opts["limits"], dict):
+                    value = child.opts["limits"][value]
+                else:
+                    value = eval(value)
+                child.setValue(value)
 
     @classmethod
     def setParameter(cls, parameter, echo=False, blockSignal=False):

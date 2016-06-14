@@ -31,12 +31,12 @@ from chipwhisperer.common.api.settings import Settings
 
 class CWPreferencesDialog(QtFixes.QDialog):
 
-    def __init__(self, parent, settings):
+    def __init__(self, parent):
         super(CWPreferencesDialog, self).__init__(parent)
 
         self.setWindowTitle("ChipWhisperer Preferences")
 
-        self._generalTab = GeneralTab(self, settings)
+        self._generalTab = GeneralTab(self)
         self._windowsTab = WindowTab(self)
 
         tabWidget = QTabWidget()
@@ -72,13 +72,11 @@ class CWPreferencesDialog(QtFixes.QDialog):
 class GeneralTab(QWidget):
     _name = "Preferences"
 
-    def __init__(self, parent, settings):
+    def __init__(self, parent):
         super(GeneralTab, self).__init__(parent)
 
-        self.settings = settings
-
         parameterTree = ParameterTree()
-        parameterTree.addParameters(self.settings.params._PyQtGraphParameter)
+        parameterTree.addParameters(Settings().params._PyQtGraphParameter)
 
         defdirLayout = QHBoxLayout()
         defdirLayout.addWidget(parameterTree)
