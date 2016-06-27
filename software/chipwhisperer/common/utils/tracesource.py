@@ -34,8 +34,8 @@ class TraceSource(object):
     It has traces as output
     Keeps a dictionary with all the registered objets and emits a signal when a new one is added
     """
-    registeredObjects = util.DictType()
-    registeredObjects["None"] = None
+    _registeredObjects = util.DictType()
+    _registeredObjects.update({"None": None})
     sigRegisteredObjectsChanged = util.Signal()
 
     def __init__(self, name="Unknown"):
@@ -68,18 +68,25 @@ class TraceSource(object):
         raise NotImplementedError
 
     def register(self):
-        self.registeredObjects[self.name] = self
+        self._registeredObjects[self.name] = self
         self.sigRegisteredObjectsChanged.emit()
         return self
 
     def deregister(self):
-        if TraceSource.registeredObjects.pop(self.name, None):
-            TraceSource.sigRegisteredObjectsChanged.emit()
+        for key in TraceSource._registeredObjects.keys():
+            if TraceSource._registeredObjects[key] == self:
+                del TraceSource._registeredObjects[key]
+                TraceSource.sigRegisteredObjectsChanged.emit()
+                return
+        raise KeyError
 
     @classmethod
-    def deregisterObject(cls, name):
-        if cls.registeredObjects.pop(name, None):
-            cls.sigRegisteredObjectsChanged.emit()
+    def getRegisteredObjects(cls):
+        return cls._registeredObjects
+
+    @classmethod
+    def getRegisteredObject(cls, name, default=None):
+        return cls._registeredObjects.get(name, default)
 
 
 class LiveTraceSource(TraceSource):
@@ -124,7 +131,7 @@ class PassiveTraceObserver(Parameterized):
         self._traceSource = None
 
         self.getParams().addChildren([
-            {'name':'Input', 'key':'input', 'type':'list', 'values':TraceSource.registeredObjects, 'default':None, 'get':self.getTraceSource, 'set':self.setTraceSource}
+            {'name':'Input', 'key':'input', 'type':'list', 'values':TraceSource.getRegisteredObjects(), 'default':None, 'get':self.getTraceSource, 'set':self.setTraceSource}
         ])
 
     @setupSetParam('Input')
@@ -140,8 +147,8 @@ class PassiveTraceObserver(Parameterized):
     def traceSourcesChanged(self):
         par = self.findParam('input')
         par.setLimits({})  # Will not update if the obj is the same :(
-        par.setLimits(TraceSource.registeredObjects)
-        if par.getValue() not in TraceSource.registeredObjects.values():
+        par.setLimits(TraceSource.getRegisteredObjects())
+        if par.getValue() not in TraceSource._registeredObjects.values():
             par.setValue(None)
 
 class ActiveTraceObserver(PassiveTraceObserver):

@@ -39,7 +39,7 @@ class ScopeTemplate(Parameterized, Plugin):
         self.dataUpdated = util.Signal()
         self.datapoints = []
         self.params = Parameter(name=self.getName(), type='group').register()
-
+        self.liveTraceSource = None
     def dcmTimeout(self):
         pass
 
@@ -53,7 +53,7 @@ class ScopeTemplate(Parameterized, Plugin):
         return self.connectStatus.value()
 
     def con(self):
-        LiveTraceSource(self, self.getName() + " - Channel 1").register()
+        self.liveTraceSource = LiveTraceSource(self, self.getName() + " - Channel 1").register()
         if self._con():
             self.connectStatus.setValue(True)
 
@@ -62,7 +62,8 @@ class ScopeTemplate(Parameterized, Plugin):
 
     def dis(self):
         if self._dis():
-            TraceSource.deregisterObject(self.getName() + " - Channel 1")
+            self.liveTraceSource.deregister()
+            self.liveTraceSource = None
             self.connectStatus.setValue(False)
 
     def _dis(self):

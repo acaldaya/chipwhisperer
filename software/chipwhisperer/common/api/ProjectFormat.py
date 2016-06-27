@@ -271,3 +271,6 @@ class ProjectFormat(object):
             util.copyFile(t.config.configFilename(), destinationDir, keepOriginals)
             t.config.setConfigFilename(os.path.normpath(destinationDir + "/" + os.path.split(t.config.configFilename())[1]))
         self.sigStatusChanged.emit()
+
+    def __del__(self):
+        self._traceManager.deregister()

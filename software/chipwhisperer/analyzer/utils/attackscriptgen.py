@@ -250,6 +250,8 @@ class AttackScriptGen(Parameterized):
                 mse.append("%s.init()" % (instname))
                 lastOutput = instname
         mse.append("self.traces = %s" % lastOutput)
+        if lastOutput != "self.api.project().traceManager()
+            mse.append("self.traces.register()")
 
         # Get init from analysis
         mse.append("def initAnalysis(self):", 1)
@@ -299,6 +301,9 @@ class AttackScriptGen(Parameterized):
                         mse.append("self.cwagui = CWAnalyzerGUI.getInstance()") #TODO - temp hack
                         for s in statements:
                             mse.append(s.replace("UserScript.", "self."))
+
+        mse.append("def __del__(self):", 1)
+        mse.append("self.traces.deregister()")
 
         mse.append("if __name__ == '__main__':\n"
                     "    import chipwhisperer.analyzer.ui.CWAnalyzerGUI as cwa\n"
